@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -15,6 +16,8 @@ namespace project.ViewModule
         private User selectedUser;
         private Book selectedBook;
         private UserBook selectedUserBook;
+        private string userSearchText;
+        private string bookSearchText;
 
         public ObservableCollection<User> Users { get; set; }
         public ObservableCollection<Book> Books { get; set; }
@@ -29,14 +32,16 @@ namespace project.ViewModule
                 return addCommand ??
                   (addCommand = new RelayCommand(obj =>
                   {
-                      User user = new User();
-                      Users.Insert(0, user);
-                      SelectedUser = user;
-
-                      Book book = new Book();
-                      Books.Insert(0, book);
-                      SelectedBook = book;
-                  }));
+                      selectedBook.Count--;
+                      UserBook usBook = new UserBook()
+                      {
+                          Name = SelectedUser.Name,
+                          Lastname = SelectedUser.Lastname,
+                          Title = SelectedBook.Title
+                      };
+                      UsersBooks.Add(usBook);
+                  },
+                  (obj) => selectedBook != null && selectedUser != null && selectedBook.Count > 0));
             }
         }
 
@@ -44,24 +49,36 @@ namespace project.ViewModule
         private RelayCommand removeCommand;
         public RelayCommand RemoveCommand
         {
+            //get
+            //{
+            //    return removeCommand ??
+            //      (removeCommand = new RelayCommand(obj =>
+            //      {
+            //          Book book = obj as Book;
+            //          if (book != null && book.Title == selectedUserBook.Title)
+            //          {
+            //              book.Count++;
+            //          }
+            //          UserBook reuser = obj as UserBook;
+            //          if (reuser != null)
+            //          {
+            //              UsersBooks.Remove(reuser);
+            //          }
+            //      }));
+            //}
+
             get
             {
                 return removeCommand ??
                   (removeCommand = new RelayCommand(obj =>
                   {
-                      User user = obj as User;
-                      if (user != null)
+                      selectedBook.Count++;
+                      UserBook reuser = obj as UserBook;
+                      if (reuser != null)
                       {
-                          Users.Remove(user);
+                          UsersBooks.Remove(reuser);
                       }
-
-                      Book book = obj as Book;
-                      if(user != null)
-                      {
-                          Books.Remove(book);
-                      }
-                  },
-                 (obj) => Users.Count > 0));
+                  }));
             }
         }
 
@@ -94,6 +111,48 @@ namespace project.ViewModule
                 OnPropertyChanged("SelectedUserBook");
             }
         }
+
+        public string UserSearchText
+        {
+            get { return userSearchText; }
+            set
+            {
+                userSearchText = value;
+                OnPropertyChanged(nameof(UserSearchText));
+                OnPropertyChanged(nameof(FilteredUsers));
+            }
+        }
+        public ObservableCollection<User> FilteredUsers
+        {
+            get
+            {
+                if (userSearchText == null)
+                    return Users;
+                return new(Users.Where(x => x.Name.Contains(userSearchText, StringComparison.OrdinalIgnoreCase) || x.Lastname.Contains(userSearchText, StringComparison.OrdinalIgnoreCase)));
+            }
+        }
+
+        public string BookSearchText
+        {
+            get { return bookSearchText; }
+            set 
+            { 
+                bookSearchText = value; 
+                OnPropertyChanged(nameof(BookSearchText));
+                OnPropertyChanged(nameof(FilteredBooks));
+            }
+        }
+
+        public ObservableCollection<Book> FilteredBooks
+        {
+            get
+            {
+                if (bookSearchText == null)
+                    return Books;
+                return new(Books.Where(x => x.Title.Contains(bookSearchText, StringComparison.OrdinalIgnoreCase) || x.Author.Contains(bookSearchText, StringComparison.OrdinalIgnoreCase)));
+            }
+        }
+
         public ApplicationViewModel()
         {
             Users = new ObservableCollection<User>
@@ -115,7 +174,7 @@ namespace project.ViewModule
 
             UsersBooks = new ObservableCollection<UserBook>
             {
-                new UserBook { Name = "name", Lastname = "lastname", Title = "title" }
+                //new UserBook { Name = "name", Lastname = "lastname", Title = "title" }
             };
         }
 
